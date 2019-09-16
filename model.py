@@ -32,6 +32,7 @@ for target in targets:
     if 'TimeFromFirstStop' not in target and '40' not in target and '60' not in target: # These targets don't count
         target_data[target] = train[target]
     train.drop(target, axis=1, inplace=True)
+    test.drop(target, axis=1, inplace=True)
 
 
 print_step('Label encode')
@@ -75,6 +76,10 @@ lgb_params = {'application': 'poisson',
 results = run_cv_model(train, test, y, runLGB, lgb_params, rmse, label, n_folds=5)
 import pdb
 pdb.set_trace()
+
+imports = results['importance'].groupby('feature')['feature', 'importance'].mean().reset_index()
+with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+    print(imports.sort_values('importance', ascending=False))
 
 print_step('Saving OOFs')
 pd.DataFrame({label: results['train']}).to_csv('{}_oof.csv'.format(label), index=False)

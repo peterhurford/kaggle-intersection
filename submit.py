@@ -38,16 +38,16 @@ oofs2 = pd.concat([pd.DataFrame(x.values) for x in oof_data.values()], axis=0)
 oofs2.columns = ['value', 'target']
 
 print('Global', rmse(oofs2['target'], oofs2['value']))
+import pdb
+pdb.set_trace()
 
 
 print_step('Compiling Submit')
-prediction = []
-for x in range(len(list(submit_data.values())[0])):
-    for y in list(submit_data.values()):
-        prediction.append(y.values[x][0])
+submit = pd.concat([pd.DataFrame(x.values) for x in submit_data.values()], axis=0)
+submit.columns = ['Target']
+submit = submit.reset_index(drop=True)
+submit['TargetId'] = sum([['{}_{}'.format(d, c) for d in range(submit_data['TotalTimeStopped_p20'].shape[0])] for c in range(6)], [])
+submit = submit.sort_values('TargetId').reset_index(drop=True)[['TargetId', 'Target']]
 
-submission = pd.read_csv('sample_submission.csv')
-submission['Target'] = prediction
-import pdb
-pdb.set_trace()
-submission.to_csv('submission.csv', index = False)
+print_step('Saving Submit')
+submit.to_csv('submission.csv', index=False)

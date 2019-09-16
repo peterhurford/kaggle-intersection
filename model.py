@@ -35,6 +35,15 @@ for target in targets:
     test.drop(target, axis=1, inplace=True)
 
 
+IS_OOFS_MODE = len(sys.argv) == 3 and sys.argv[2] == 'add_oofs'
+if IS_OOFS_MODE:
+    print_step('Loading OOFs')
+    train_oofs = pd.read_csv('oofs_train.csv')
+    test_oofs = pd.read_csv('oofs_test.csv')
+    train = pd.concat((train, train_oofs), sort=False, axis=1).reset_index(drop=True)
+    test = pd.concat((test, test_oofs), sort=False, axis=1).reset_index(drop=True)
+
+
 print_step('Label encode')
 cat_cols = train.dtypes[(train.dtypes != np.float) & (train.dtypes != np.int64)]
 cat_cols = list(cat_cols.keys())
@@ -50,6 +59,8 @@ for c in cat_cols:
 model_id = sys.argv[1]
 y = list(target_data.items())[int(model_id)]
 label = y[0]
+if IS_OOFS_MODE:
+    label = label + '_w_oofs'
 y = y[1]
 print_step('Modeling {}'.format(label))
 
@@ -72,6 +83,10 @@ lgb_params = {'application': 'poisson',
               'num_rounds': 1000,
               'num_threads': 5,
               'cat_cols': cat_cols}
+
+if IS_OOFS_MODE:
+    lgb_params['lambda_l1'] = 3.0
+    lgb_params['lambda_l2'] = 3.0
 
 results = run_cv_model(train, test, y, runLGB, lgb_params, rmse, label, n_folds=5)
 import pdb

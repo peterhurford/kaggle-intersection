@@ -19,6 +19,8 @@ targets = ['TotalTimeStopped_p20', 'TotalTimeStopped_p40',
            'TimeFromFirstStop_p80', 'DistanceToFirstStop_p20',
            'DistanceToFirstStop_p40', 'DistanceToFirstStop_p50',
            'DistanceToFirstStop_p60', 'DistanceToFirstStop_p80']
+if IS_OOFS_MODE:
+    print_step('[Adding lvl 1 OOF data]')
 for target in targets:
     if 'TimeFromFirstStop' not in target and '40' not in target and '60' not in target: # These targets don't count
         label = target

@@ -14,8 +14,8 @@ train.loc[:, 'is_train'] = 1
 test.loc[:, 'is_train'] = 0
 tr_te = pd.concat([train, test], sort=False)
 tr_te = tr_te.fillna('Empty')
-tr_te['HeadingsMatch'] = (tr_te['EntryHeading'] == tr_te['ExitHeading'])
 tr_te['StreetsMatch'] = (tr_te['EntryStreetName'] == tr_te['ExitStreetName'])
+tr_te['HeadingsMatch'] = (tr_te['EntryHeading'] == tr_te['ExitHeading'])
 tr_te['StreetsHeadingsMatch'] = (tr_te['HeadingsMatch'] & tr_te['StreetsMatch'])
 tr_te['Path'] = tr_te['City'] + '_' + tr_te['Path']
 tr_te['Path'] = tr_te['Path'].apply(lambda s: s.replace(' ', '_'))
@@ -32,6 +32,31 @@ tr_te['EntryStreetNameHeading'] = tr_te['EntryStreetName'] + '_' + tr_te['EntryH
 tr_te['ExitStreetNameHeading'] = tr_te['ExitStreetName'] + '_' + tr_te['ExitHeading']
 tr_te['EntryStreetExitStreet'] = tr_te['EntryStreetName'] + '_' + tr_te['ExitStreetName']
 tr_te['IntersectionId'] = tr_te['City'] + '_' + tr_te['IntersectionId'].astype(str)
+tr_te['EntryExitHeading'] = tr_te['EntryHeading'] + '_' + tr_te['ExitHeading']
+
+turns = {'Straight': ['E_E', 'N_N', 'S_S', 'W_W', 'NE_NE', 'SE_SE', 'NW_NW', 'SW_SW'],
+         'Slight Left': ['E_NE', 'NE_N', 'N_NW', 'NW_W', 'W_SW', 'SW_S', 'S_SE', 'SE_E'],
+         'Left': ['E_N', 'N_W', 'W_S', 'S_E', 'NE_NW', 'NW_SW', 'SE_NE', 'SW_SE'],
+         'Sharp Left': ['E_NW', 'N_SW', 'W_SE', 'S_NE', 'NE_W', 'NW_S', 'SE_N', 'SW_E'],
+         'Slight Right': ['E_SE', 'N_NE', 'W_NW', 'S_SW', 'NE_E', 'NW_N', 'SE_S', 'SW_W'],
+         'Right': ['E_S', 'N_E', 'W_N', 'S_W', 'NE_SE', 'NW_NE', 'SE_SW', 'SW_NW'],
+         'Sharp Right': ['E_SW', 'N_SE', 'W_NE', 'S_NW', 'NE_S', 'NW_E', 'SE_W', 'SW_N'],
+		 'UTurn': ['E_W', 'N_S', 'W_E', 'S_N', 'NE_SW', 'SE_NW', 'NW_SE', 'SW_NE']}
+turns2 = {}
+for turn_type, turn_set in turns.items():
+	for turn in turn_set:
+		turns2[turn] = turn_type
+tr_te['TurnType'] = tr_te['EntryExitHeading'].apply(lambda t: turns2[t])
+
+turns3 = {'Straight': 'Straight', 'Slight Left': 'Slight Turn', 'Left': 'Turn',
+          'Sharp Left': 'Sharp Turn', 'Slight Right': 'Slight Turn', 'Right': 'Turn',
+          'Sharp Right': 'Sharp Turn', 'UTurn': 'UTurn'}
+tr_te['TurnSharpness'] = tr_te['TurnType'].apply(lambda t: turns3[t])
+
+turns4 = {'Straight': 'Straight', 'Slight Left': 'Left', 'Left': 'Left',
+          'Sharp Left': 'Left', 'Slight Right': 'Right', 'Right': 'Right',
+          'Sharp Right': 'Right', 'UTurn': 'UTurn'}
+tr_te['TurnDirection'] = tr_te['TurnType'].apply(lambda t: turns4[t])
 
 
 print_step('Count encoding')

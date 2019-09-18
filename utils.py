@@ -18,9 +18,10 @@ def print_step(step):
     print('[{}] {}'.format(datetime.now(), step))
 
 
-def run_cv_model(train, test, target, model_fn, params={}, eval_fn=None, label='model', n_folds=5):
-    kf = KFold(n_splits=n_folds, random_state=42, shuffle=True)
-    fold_splits = kf.split(train)
+def run_cv_model(train, test, target, model_fn, params={}, eval_fn=None, label='model', n_folds=5, fold_splits=None, train_on_full=False):
+    if not fold_splits:
+        kf = KFold(n_splits=n_folds, random_state=42, shuffle=True)
+        fold_splits = kf.split(train)
     cv_scores = []
     pred_full_test = 0
     pred_train = np.zeros((train.shape[0]))
@@ -48,11 +49,18 @@ def run_cv_model(train, test, target, model_fn, params={}, eval_fn=None, label='
             fold_importance_df['fold'] = i
             feature_importance_df = pd.concat([feature_importance_df, fold_importance_df], axis=0)
         i += 1
+
+    if train_on_full:
+        print_step('## Training on full ##')
+        params2 = params.copy()
+        _, pred_full_test, _ = model_fn(train, target, None, None, test, params2)
+    else:
+        pred_full_test = pred_full_test / n_folds
+
     print('{} cv scores : {}'.format(label, cv_scores))
     print('{} cv mean score : {}'.format(label, np.mean(cv_scores)))
     print('{} cv total score : {}'.format(label, eval_fn(target, pred_train)))
     print('{} cv std score : {}'.format(label, np.std(cv_scores)))
-    pred_full_test = pred_full_test / n_folds
 
     results = {'label': label,
                'train': pred_train, 'test': pred_full_test,
@@ -61,11 +69,14 @@ def run_cv_model(train, test, target, model_fn, params={}, eval_fn=None, label='
     return results
 
 
-def runLGB(train_X, train_y, test_X, test_y, test_X2, params):
+def runLGB(train_X, train_y, test_X=None, test_y=None, test_X2=None, params={}):
     print_step('Prep LGB')
     d_train = lgb.Dataset(train_X, label=train_y)
-    d_valid = lgb.Dataset(test_X, label=test_y)
-    watchlist = [d_train, d_valid]
+    if test_X is not None:
+        d_valid = lgb.Dataset(test_X, label=test_y)
+        watchlist = [d_train, d_valid]
+    else:
+        watchlist = [d_train]
     print_step('Train LGB')
     num_rounds = params.pop('num_rounds')
     verbose_eval = params.pop('verbose_eval')
@@ -92,13 +103,21 @@ def runLGB(train_X, train_y, test_X, test_y, test_X2, params):
                           verbose_eval=verbose_eval,
                           early_stopping_rounds=early_stop,
                           categorical_feature=cat_cols)
-        print_step('Predict 1/2')
-        pred_test_y = model.predict(test_X, num_iteration=model.best_iteration)
+        if test_X is not None:
+            print_step('Predict 1/2')
+            pred_test_y = model.predict(test_X, num_iteration=model.best_iteration)
+            preds_test_y += [pred_test_y]
         print_step('Predict 2/2')
-        pred_test_y2 = model.predict(test_X2, num_iteration=model.best_iteration)
-        preds_test_y += [pred_test_y]
-        preds_test_y2 += [pred_test_y2]
+        if test_X2 is not None:
+            pred_test_y2 = model.predict(test_X2, num_iteration=model.best_iteration)
+            preds_test_y2 += [pred_test_y2]
 
-    pred_test_y = np.mean(preds_test_y, axis=0)
-    pred_test_y2 = np.mean(preds_test_y2, axis=0)
+    if test_X is not None:
+        pred_test_y = np.mean(preds_test_y, axis=0)
+    else:
+        pred_test_y = None
+    if test_X2 is not None:
+        pred_test_y2 = np.mean(preds_test_y2, axis=0)
+    else:
+        pred_test_y2 = None
     return pred_test_y, pred_test_y2, model.feature_importance()

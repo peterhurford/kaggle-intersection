@@ -6,6 +6,7 @@ import numpy as np
 from utils import print_step, rmse, run_cv_model, runLGB
 
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import GroupKFold
 
 
 print_step('Loading munged train')
@@ -35,15 +36,6 @@ for target in targets:
     test.drop(target, axis=1, inplace=True)
 
 
-IS_OOFS_MODE = len(sys.argv) == 3 and sys.argv[2] == 'add_oofs'
-if IS_OOFS_MODE:
-    print_step('Loading OOFs')
-    train_oofs = pd.read_csv('oofs_train.csv')
-    test_oofs = pd.read_csv('oofs_test.csv')
-    train = pd.concat((train, train_oofs), sort=False, axis=1).reset_index(drop=True)
-    test = pd.concat((test, test_oofs), sort=False, axis=1).reset_index(drop=True)
-
-
 print_step('Label encode')
 cat_cols = train.dtypes[(train.dtypes != np.float) & (train.dtypes != np.int64)]
 cat_cols = list(cat_cols.keys())
@@ -55,6 +47,42 @@ for c in cat_cols:
     test.loc[:, c] = le.transform(test[c])
 
 
+# # Create special stratified fold to make 33% of validation set have unique
+# # PathIntersections, like as in actual test.
+# print_step('Calculating folds')
+# train['fold_id'] = -1
+# groups = [train for _, train in train.groupby('IntersectionId')]
+# random.seed(42)
+# np.random.seed(42)
+# random.shuffle(groups)
+# train = pd.concat(groups).reset_index(drop=True)
+# nx = round(train.shape[0] / 15)
+# train.loc[0:nx, 'fold_id'] = 0
+# train.loc[(nx+1):nx*2, 'fold_id'] = 1
+# train.loc[(nx*2+1):nx*3, 'fold_id'] = 2
+# train.loc[(nx*3+1):nx*4, 'fold_id'] = 3
+# train.loc[(nx*4+1):nx*5, 'fold_id'] = 4
+# nx = len(train[train['fold_id'] == -1])
+# fold_ids = np.array(sum([[x] * round(nx / 5) for x in range(5)], []))
+# np.random.shuffle(fold_ids)
+# train.loc[train['fold_id'] == -1, 'fold_id'] = fold_ids[0:nx]
+
+
+IS_OOFS_MODE = len(sys.argv) == 3 and sys.argv[2] == 'add_oofs'
+if IS_OOFS_MODE:
+    print_step('Loading OOFs 1/2')
+    train_oofs = pd.read_csv('oofs_train.csv')
+    test_oofs = pd.read_csv('oofs_test.csv')
+    train_g = train.copy()
+    test_g = test.copy()
+    train = pd.concat((train, train_oofs), sort=False, axis=1).reset_index(drop=True)
+    test = pd.concat((test, test_oofs), sort=False, axis=1).reset_index(drop=True)
+    print_step('Loading OOFs 2/2')
+    train_oofs = pd.read_csv('oofs_g_train.csv')
+    test_oofs = pd.read_csv('oofs_g_test.csv')
+    train_g = pd.concat((train_g, train_oofs), sort=False, axis=1).reset_index(drop=True)
+    test_g = pd.concat((test_g, test_oofs), sort=False, axis=1).reset_index(drop=True)
+
 
 model_id = sys.argv[1]
 y = list(target_data.items())[int(model_id)]
@@ -62,8 +90,12 @@ label = y[0]
 if IS_OOFS_MODE:
     label = label + '_w_oofs'
 y = y[1]
-print_step('Modeling {}'.format(label))
 
+split_cols = ['EntryStreetExitStreet', 'Path', 'PathIntersection', 'IntersectionId',
+              'ExitStreetName', 'EntryStreetName', 'EntryStreetNameHeading',
+              'ExitStreetNameHeading', 'Latitude', 'Longitude']
+
+print_step('Modeling {}'.format(label))
 lgb_params = {'application': 'poisson',
               'boosting': 'gbdt',
               'metric': 'rmse',
@@ -81,22 +113,50 @@ lgb_params = {'application': 'poisson',
               'early_stop': 60,
               'verbose_eval': 30,
               'num_rounds': 1000,
-              'num_threads': 5,
-              'cat_cols': cat_cols}
+              'num_threads': 6,
+              'cat_cols': list(set(cat_cols) - set(split_cols))}
 
 if IS_OOFS_MODE:
     lgb_params['lambda_l1'] = 3.0
     lgb_params['lambda_l2'] = 3.0
 
+# train['target'] = y
+# X_train = train[train['fold_id'] != 0].reset_index(drop=True)
+# X_test = train[train['fold_id'] == 0].reset_index(drop=True)
+# X_train = X_train.sample(frac=1.0, random_state=42).reset_index(drop=True)
+# y_train = X_train['target']
+# y_test = X_test['target']
+# split = GroupKFold(n_splits=5)
+# split = split.split(X_train, y_train, X_train['IntersectionId'])
+# X_train.drop(['fold_id', 'target'], axis=1, inplace=True)
+# X_test.drop(['fold_id', 'target'], axis=1, inplace=True)
+# results_g = run_cv_model(X_train.drop(split_cols2, axis=1).reset_index(drop=True), X_test.drop(split_cols2, axis=1).reset_index(drop=True), y_train.reset_index(drop=True), runLGB, lgb_params, rmse, label, n_folds=5, fold_splits=split)
+# lgb_params['cat_cols'] = cat_cols
+# results = run_cv_model(X_train, X_test, y_train, runLGB, lgb_params, rmse, label, n_folds=5)
+# import pdb
+# pdb.set_trace()
+
+split = GroupKFold(n_splits=5)
+split = split.split(train_g, y, train_g['IntersectionId'])
+results_g = run_cv_model(train_g.drop(split_cols, axis=1), test_g.drop(split_cols, axis=1), y, runLGB, lgb_params, rmse, label, n_folds=5, fold_splits=split)
+lgb_params['cat_cols'] = cat_cols
 results = run_cv_model(train, test, y, runLGB, lgb_params, rmse, label, n_folds=5)
 import pdb
 pdb.set_trace()
+
+imports = results_g['importance'].groupby('feature')['feature', 'importance'].mean().reset_index()
+with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+    print(imports.sort_values('importance', ascending=False))
 
 imports = results['importance'].groupby('feature')['feature', 'importance'].mean().reset_index()
 with pd.option_context('display.max_rows', None, 'display.max_columns', None):
     print(imports.sort_values('importance', ascending=False))
 
-print_step('Saving OOFs')
+print_step('Saving OOFs 1/2')
 pd.DataFrame({label: results['train']}).to_csv('{}_oof.csv'.format(label), index=False)
-print_step('Saving preds')
+print_step('Saving OOFs 2/2')
+pd.DataFrame({label: results_g['train']}).to_csv('{}_g_oof.csv'.format(label), index=False)
+print_step('Saving preds 1/2')
 pd.DataFrame({label: results['test']}).to_csv('{}_submit.csv'.format(label), index=False)
+print_step('Saving preds 2/2')
+pd.DataFrame({label: results_g['test']}).to_csv('{}_g_submit.csv'.format(label), index=False)

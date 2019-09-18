@@ -47,27 +47,6 @@ for c in cat_cols:
     test.loc[:, c] = le.transform(test[c])
 
 
-# # Create special stratified fold to make 33% of validation set have unique
-# # PathIntersections, like as in actual test.
-# print_step('Calculating folds')
-# train['fold_id'] = -1
-# groups = [train for _, train in train.groupby('IntersectionId')]
-# random.seed(42)
-# np.random.seed(42)
-# random.shuffle(groups)
-# train = pd.concat(groups).reset_index(drop=True)
-# nx = round(train.shape[0] / 15)
-# train.loc[0:nx, 'fold_id'] = 0
-# train.loc[(nx+1):nx*2, 'fold_id'] = 1
-# train.loc[(nx*2+1):nx*3, 'fold_id'] = 2
-# train.loc[(nx*3+1):nx*4, 'fold_id'] = 3
-# train.loc[(nx*4+1):nx*5, 'fold_id'] = 4
-# nx = len(train[train['fold_id'] == -1])
-# fold_ids = np.array(sum([[x] * round(nx / 5) for x in range(5)], []))
-# np.random.shuffle(fold_ids)
-# train.loc[train['fold_id'] == -1, 'fold_id'] = fold_ids[0:nx]
-
-
 IS_OOFS_MODE = len(sys.argv) == 3 and sys.argv[2] == 'add_oofs'
 if IS_OOFS_MODE:
     print_step('Loading OOFs 1/2')
@@ -120,21 +99,6 @@ if IS_OOFS_MODE:
     lgb_params['lambda_l1'] = 3.0
     lgb_params['lambda_l2'] = 3.0
 
-# train['target'] = y
-# X_train = train[train['fold_id'] != 0].reset_index(drop=True)
-# X_test = train[train['fold_id'] == 0].reset_index(drop=True)
-# X_train = X_train.sample(frac=1.0, random_state=42).reset_index(drop=True)
-# y_train = X_train['target']
-# y_test = X_test['target']
-# split = GroupKFold(n_splits=5)
-# split = split.split(X_train, y_train, X_train['IntersectionId'])
-# X_train.drop(['fold_id', 'target'], axis=1, inplace=True)
-# X_test.drop(['fold_id', 'target'], axis=1, inplace=True)
-# results_g = run_cv_model(X_train.drop(split_cols2, axis=1).reset_index(drop=True), X_test.drop(split_cols2, axis=1).reset_index(drop=True), y_train.reset_index(drop=True), runLGB, lgb_params, rmse, label, n_folds=5, fold_splits=split)
-# lgb_params['cat_cols'] = cat_cols
-# results = run_cv_model(X_train, X_test, y_train, runLGB, lgb_params, rmse, label, n_folds=5)
-# import pdb
-# pdb.set_trace()
 
 split = GroupKFold(n_splits=5)
 split = split.split(train_g, y, train_g['IntersectionId'])

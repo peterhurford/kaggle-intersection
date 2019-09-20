@@ -23,9 +23,9 @@ print_step('Imputing')
 tr_te = tr_te.fillna('Empty')
 
 print_step('Matches')
-tr_te['StreetsMatch'] = (tr_te['EntryStreetName'] == tr_te['ExitStreetName'])
-tr_te['HeadingsMatch'] = (tr_te['EntryHeading'] == tr_te['ExitHeading'])
-tr_te['StreetsHeadingsMatch'] = (tr_te['HeadingsMatch'] & tr_te['StreetsMatch'])
+tr_te['StreetsMatch'] = (tr_te['EntryStreetName'] == tr_te['ExitStreetName']).astype(int)
+tr_te['HeadingsMatch'] = (tr_te['EntryHeading'] == tr_te['ExitHeading']).astype(int)
+tr_te['StreetsHeadingsMatch'] = (tr_te['HeadingsMatch'] & tr_te['StreetsMatch']).astype(int)
 
 print_step('Cleanup')
 tr_te['Path'] = tr_te['City'] + '_' + tr_te['Path']
@@ -97,8 +97,8 @@ for city, center in city_centers.items():
 print_step('Quadrants')
 tr_te['abs_lat_from_center'] = tr_te['lat_from_center'].apply(lambda x: np.abs(x))
 tr_te['abs_lon_from_center'] = tr_te['lon_from_center'].apply(lambda x: np.abs(x))
-tr_te['north_south'] = tr_te['lat_from_center'].apply(lambda x: x >= 0)
-tr_te['east_west'] = tr_te['lon_from_center'].apply(lambda x: x >= 0)
+tr_te['north_south'] = tr_te['lat_from_center'].apply(lambda x: x >= 0).astype(int)
+tr_te['east_west'] = tr_te['lon_from_center'].apply(lambda x: x >= 0).astype(int)
 tr_te['quadrant'] = tr_te['north_south'].astype(str) + '_' + tr_te['east_west'].astype(str)
 tr_te['City_north_south'] = tr_te['City'] + '_' + tr_te['north_south'].astype(str)
 tr_te['City_east_west'] = tr_te['City'] + '_' + tr_te['east_west'].astype(str)

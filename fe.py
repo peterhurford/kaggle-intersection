@@ -94,9 +94,28 @@ for city, center in city_centers.items():
     print_step('... ... Angle')
     tr_te.loc[tr_te['City'] == city, 'angle_from_center'] = tr_te[tr_te['City'] == city].apply(lambda x: math.degrees(math.atan2(x['Latitude'] - center['lat'], x['Longitude'] - center['lon'])), axis=1)
 
+
+print_step('Airports')
+city_airports = {'Chicago': {'lat': 41.9742, 'lon': -87.9073},
+                 'Philadelphia': {'lat': 39.8744, 'lon': -75.2424},
+                 'Atlanta': {'lat': 33.6407, 'lon': -84.4277},
+                 'Boston': {'lat': 42.3656, 'lon': -71.0096}}
+for city, airport in city_airports.items():
+    print_step('... {} (airport)'.format(city))
+    tr_te.loc[tr_te['City'] == city, 'lat_from_airport'] = tr_te.loc[tr_te['City'] == city]['Latitude'] - airport['lat']
+    tr_te.loc[tr_te['City'] == city, 'lon_from_airport'] = tr_te.loc[tr_te['City'] == city]['Longitude'] - airport['lon']
+    for metric_name, metric_object in distance_metrics.items():
+        print_step('... ... {}'.format(metric_name))
+        tr_te.loc[tr_te['City'] == city, '{}_from_airport'.format(metric_name)] = tr_te[tr_te['City'] == city].apply(lambda x: metric_object.pairwise([[x['Latitude'], x['Longitude']], [airport['lat'], airport['lon']]])[0][1], axis=1)
+    print_step('... ... Angle')
+    tr_te.loc[tr_te['City'] == city, 'angle_from_airport'] = tr_te[tr_te['City'] == city].apply(lambda x: math.degrees(math.atan2(x['Latitude'] - airport['lat'], x['Longitude'] - airport['lon'])), axis=1)
+
+
 print_step('Quadrants')
 tr_te['abs_lat_from_center'] = tr_te['lat_from_center'].apply(lambda x: np.abs(x))
 tr_te['abs_lon_from_center'] = tr_te['lon_from_center'].apply(lambda x: np.abs(x))
+tr_te['abs_lat_from_airport'] = tr_te['lat_from_airport'].apply(lambda x: np.abs(x))
+tr_te['abs_lon_from_airport'] = tr_te['lon_from_airport'].apply(lambda x: np.abs(x))
 tr_te['north_south'] = tr_te['lat_from_center'].apply(lambda x: x >= 0).astype(int)
 tr_te['east_west'] = tr_te['lon_from_center'].apply(lambda x: x >= 0).astype(int)
 tr_te['quadrant'] = tr_te['north_south'].astype(str) + '_' + tr_te['east_west'].astype(str)

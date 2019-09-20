@@ -94,6 +94,16 @@ for city, center in city_centers.items():
     print_step('... ... Angle')
     tr_te.loc[tr_te['City'] == city, 'angle_from_center'] = tr_te[tr_te['City'] == city].apply(lambda x: math.degrees(math.atan2(x['Latitude'] - center['lat'], x['Longitude'] - center['lon'])), axis=1)
 
+print_step('Quadrants')
+tr_te['abs_lat_from_center'] = tr_te['lat_from_center'].apply(lambda x: np.abs(x))
+tr_te['abs_lon_from_center'] = tr_te['lon_from_center'].apply(lambda x: np.abs(x))
+tr_te['north_south'] = tr_te['lat_from_center'].apply(lambda x: x >= 0)
+tr_te['east_west'] = tr_te['lon_from_center'].apply(lambda x: x >= 0)
+tr_te['quadrant'] = tr_te['north_south'].astype(str) + '_' + tr_te['east_west'].astype(str)
+tr_te['City_north_south'] = tr_te['City'] + '_' + tr_te['north_south'].astype(str)
+tr_te['City_east_west'] = tr_te['City'] + '_' + tr_te['east_west'].astype(str)
+tr_te['City_quadrant'] = tr_te['City'] + '_' + tr_te['quadrant']
+
 
 print_step('Count encoding')
 cat_cols = tr_te.dtypes[(tr_te.dtypes != np.float) & (tr_te.dtypes != np.int64)]

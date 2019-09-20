@@ -47,13 +47,13 @@ for c in cat_cols:
     test.loc[:, c] = le.transform(test[c])
 
 
+train_g = train.copy()
+test_g = test.copy()
 IS_OOFS_MODE = len(sys.argv) == 3 and sys.argv[2] == 'add_oofs'
 if IS_OOFS_MODE:
     print_step('Loading OOFs 1/2')
     train_oofs = pd.read_csv('oofs_train.csv')
     test_oofs = pd.read_csv('oofs_test.csv')
-    train_g = train.copy()
-    test_g = test.copy()
     train = pd.concat((train, train_oofs), sort=False, axis=1).reset_index(drop=True)
     test = pd.concat((test, test_oofs), sort=False, axis=1).reset_index(drop=True)
     print_step('Loading OOFs 2/2')

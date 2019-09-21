@@ -1,4 +1,5 @@
 import math
+import string
 
 import pandas as pd
 import numpy as np
@@ -30,11 +31,64 @@ tr_te['StreetsHeadingsMatch'] = (tr_te['HeadingsMatch'] & tr_te['StreetsMatch'])
 print_step('Cleanup')
 tr_te['Path'] = tr_te['City'] + '_' + tr_te['Path']
 tr_te['Path'] = tr_te['Path'].apply(lambda s: s.replace(' ', '_'))
+
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.translate(str.maketrans('', '', string.punctuation)))
 tr_te['EntryStreetName'] = tr_te['City'] + '_' + tr_te['EntryStreetName']
 tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace(' ', '_'))
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('_St', '_Street'))
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('_Ave', '_Avenue'))
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('_Bld', '_Boulevard'))
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('_Pkwy', '_Parkway'))
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('S_', 'South_'))
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('_S\b', '_South'))
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('N_', 'North'))
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('_N\b', '_North'))
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('E_', 'East'))
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('_E\b', '_East'))
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('W_', 'West'))
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('_W\b', '_West'))
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('NW', 'Northwest'))
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('NE', 'Northeast'))
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('SW', 'Southwest'))
+tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('SE', 'Southeast'))
+
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.translate(str.maketrans('', '', string.punctuation)))
 tr_te['ExitStreetName'] = tr_te['City'] + '_' + tr_te['ExitStreetName']
 tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace(' ', '_'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace(' ', '_'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('_St', '_Street'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('_Ave', '_Avenue'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('_Bld', '_Boulevard'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('_Pkwy', '_Parkway'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('S_', 'South_'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('_S\b', '_South'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('N_', 'North'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('_N\b', '_North'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('E_', 'East'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('_E\b', '_East'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('W_', 'West'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('_W\b', '_West'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('NW', 'Northwest'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('NE', 'Northeast'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('SW', 'Southwest'))
+tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('SE', 'Southeast'))
+
 tr_te['IntersectionId'] = tr_te['City'] + '_' + tr_te['IntersectionId'].astype(str)
+
+
+print_step('Street Type')
+def street_type(street):
+    street_types = ['Street', 'Avenue', 'Road', 'Boulevard', 'Drive', 'Park', 'Parkway',
+                    'Place', 'Circle', 'Highway', 'Way', 'Square', 'Terrace',
+                    'Connector', 'Bridge', 'Overpass']
+    for street_type in street_types:
+        if '_{}'.format(street_type) in street:
+            return street_type
+    return 'Other'
+
+tr_te['EntryStreetType'] = tr_te['EntryStreetName'].apply(street_type)
+tr_te['ExitStreetType'] = tr_te['ExitStreetName'].apply(street_type)
+
 
 print_step('Interactions')
 tr_te['WeekendHour'] = tr_te['Weekend'].astype(str) + '_' + tr_te['Hour'].astype(str)
@@ -45,6 +99,10 @@ tr_te['cos_Hour'] = np.cos(2 * np.pi * tr_te['Hour'] / 24)
 tr_te['EntryStreetNameHeading'] = tr_te['EntryStreetName'] + '_' + tr_te['EntryHeading']
 tr_te['ExitStreetNameHeading'] = tr_te['ExitStreetName'] + '_' + tr_te['ExitHeading']
 tr_te['EntryStreetExitStreet'] = tr_te['EntryStreetName'] + '_' + tr_te['ExitStreetName']
+tr_te['EntryStreetTypeExitStreetType'] = tr_te['EntryStreetType'] + '_' + tr_te['ExitStreetType']
+tr_te['EntryStreetTypeHeading'] = tr_te['EntryStreetType'] + '_' + tr_te['EntryHeading']
+tr_te['ExitStreetTypeHeading'] = tr_te['ExitStreetType'] + '_' + tr_te['ExitHeading']
+tr_te['PathType'] = tr_te['EntryStreetTypeHeading'] + '_' +tr_te['ExitStreetTypeHeading']
 tr_te['PathIntersection'] = tr_te['Path'] + '_' + tr_te['IntersectionId']
 tr_te['EntryExitHeading'] = tr_te['EntryHeading'] + '_' + tr_te['ExitHeading']
 
@@ -73,6 +131,12 @@ turns4 = {'Straight': 'Straight', 'Slight Left': 'Left', 'Left': 'Left',
           'Sharp Left': 'Left', 'Slight Right': 'Right', 'Right': 'Right',
           'Sharp Right': 'Right', 'UTurn': 'UTurn'}
 tr_te['TurnDirection'] = tr_te['TurnType'].apply(lambda t: turns4[t])
+tr_te['EntryStreetNameTurn'] = tr_te['EntryStreetName'] + '_' + tr_te['TurnType']
+tr_te['ExitStreetNameTurn'] = tr_te['ExitStreetName'] + '_' + tr_te['TurnType']
+tr_te['PathNameTurn'] = tr_te['EntryStreetNameTurn'] + '_' +tr_te['ExitStreetName']
+tr_te['EntryStreetTypeTurn'] = tr_te['EntryStreetType'] + '_' + tr_te['TurnType']
+tr_te['ExitStreetTypeTurn'] = tr_te['ExitStreetType'] + '_' + tr_te['TurnType']
+tr_te['PathTypeTurn'] = tr_te['EntryStreetTypeTurn'] + '_' +tr_te['ExitStreetType']
 
 
 print_step('City centers')

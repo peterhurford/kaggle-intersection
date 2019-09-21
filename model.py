@@ -72,7 +72,9 @@ y = y[1]
 
 split_cols = ['EntryStreetExitStreet', 'Path', 'PathIntersection', 'IntersectionId',
               'ExitStreetName', 'EntryStreetName', 'EntryStreetNameHeading',
-              'ExitStreetNameHeading', 'Latitude', 'Longitude']
+              'ExitStreetNameHeading', 'Latitude', 'Longitude', 'EntryStreetNameTurn',
+              'ExitStreetNameTurn', 'PathNameTurn', 'PathType', 'PathTypeTurn']
+
 
 print_step('Modeling {}'.format(label))
 lgb_params = {'application': 'poisson',

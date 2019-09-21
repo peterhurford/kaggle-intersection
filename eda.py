@@ -4,6 +4,8 @@ import random
 import pandas as pd
 import numpy as np
 
+from collections import Counter
+
 from sklearn.model_selection import train_test_split
 
 from utils import print_step
@@ -47,6 +49,20 @@ for cat_col in cat_cols:
     x_in_test_only = set(X_test[cat_col]) - set(X_train[cat_col])
     x_in_test_only_n = test[cat_col].apply(lambda x: x in x_in_test_only).value_counts().get(True, 0)
     print(cat_col, in_test_only_n / test_n, x_in_test_only_n / x_test_n)
+
+
+word_count = Counter()
+for name in train['EntryStreetName']:
+    if pd.isna(name):
+        continue
+    for word in name.split('_'):
+        word_count[word] += 1
+        
+for name in train['ExitStreetName']:
+    if pd.isna(name):
+        continue
+    for word in name.split('_'):
+        word_count[word] += 1
 
 import pdb
 pdb.set_trace()

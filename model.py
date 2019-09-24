@@ -73,7 +73,10 @@ y = y[1]
 split_cols = ['EntryStreetExitStreet', 'Path', 'PathIntersection', 'IntersectionId',
               'ExitStreetName', 'EntryStreetName', 'EntryStreetNameHeading',
               'ExitStreetNameHeading', 'Latitude', 'Longitude', 'EntryStreetNameTurn',
-              'ExitStreetNameTurn', 'PathNameTurn', 'PathType', 'PathTypeTurn']
+              'ExitStreetNameTurn', 'PathNameTurn', 'PathType', 'PathTypeTurn',
+              'EntryStreetType', 'ExitStreetType', 'EntryStreetTypeExitStreetType',
+              'EntryStreetTypeHeading', 'ExitStreetTypeHeading',
+              'EntryStreetTypeTurn', 'ExitStreetTypeTurn']
 
 
 print_step('Modeling {}'.format(label))
@@ -94,7 +97,7 @@ lgb_params = {'application': 'poisson',
               'early_stop': 60,
               'verbose_eval': 30,
               'num_rounds': 1000,
-              'num_threads': 6,
+              'num_threads': 8,
               'cat_cols': list(set(cat_cols) - set(split_cols))}
 
 if IS_OOFS_MODE:

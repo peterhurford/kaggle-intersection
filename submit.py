@@ -81,29 +81,29 @@ import pdb
 pdb.set_trace()
 
 
-print_step('Compiling Submit')
+# print_step('Compiling Submit')
 submit = pd.concat(submit_data.values(), axis=1).reset_index(drop=True)
-submit_g = pd.concat(submit_g_data.values(), axis=1).reset_index(drop=True)
-submit_g.columns = [c + '_g' for c in submit_g.columns]
+# submit_g = pd.concat(submit_g_data.values(), axis=1).reset_index(drop=True)
+# submit_g.columns = [c + '_g' for c in submit_g.columns]
 
-submit3 = pd.concat([pd.DataFrame(x.values) for x in submit_data.values()], axis=0)
-submit3.columns = ['Target']
-submit3 = submit3.reset_index(drop=True)
-submit3['TargetId'] = sum([['{}_{}'.format(d, c) for d in range(submit_data['TotalTimeStopped_p20'].shape[0])] for c in range(6)], [])
-submit3 = submit3.sort_values('TargetId').reset_index(drop=True)[['TargetId', 'Target']]
+# submit3 = pd.concat([pd.DataFrame(x.values) for x in submit_data.values()], axis=0)
+# submit3.columns = ['Target']
+# submit3 = submit3.reset_index(drop=True)
+# submit3['TargetId'] = sum([['{}_{}'.format(d, c) for d in range(submit_data['TotalTimeStopped_p20'].shape[0])] for c in range(6)], [])
+# submit3 = submit3.sort_values('TargetId').reset_index(drop=True)[['TargetId', 'Target']]
 
-print_step('Saving Submit')
-submit3.to_csv('submission.csv', index=False)
+# print_step('Saving Submit')
+# submit3.to_csv('submission.csv', index=False)
 
-print_step('Compiling Submit G')
-submit3 = pd.concat([pd.DataFrame(x.values) for x in submit_g_data.values()], axis=0)
-submit3.columns = ['Target']
-submit3 = submit3.reset_index(drop=True)
-submit3['TargetId'] = sum([['{}_{}'.format(d, c) for d in range(submit_data['TotalTimeStopped_p20'].shape[0])] for c in range(6)], [])
-submit3 = submit3.sort_values('TargetId').reset_index(drop=True)[['TargetId', 'Target']]
+# print_step('Compiling Submit G')
+# submit3 = pd.concat([pd.DataFrame(x.values) for x in submit_g_data.values()], axis=0)
+# submit3.columns = ['Target']
+# submit3 = submit3.reset_index(drop=True)
+# submit3['TargetId'] = sum([['{}_{}'.format(d, c) for d in range(submit_data['TotalTimeStopped_p20'].shape[0])] for c in range(6)], [])
+# submit3 = submit3.sort_values('TargetId').reset_index(drop=True)[['TargetId', 'Target']]
 
-print_step('Saving Submit G')
-submit3.to_csv('submission_g.csv', index=False)
+# print_step('Saving Submit G')
+# submit3.to_csv('submission_g.csv', index=False)
 
 print_step('Compiling Submit M')
 in_only = set(test['IntersectionId']) - set(train['IntersectionId'])

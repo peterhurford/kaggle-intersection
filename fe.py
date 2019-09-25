@@ -90,9 +90,35 @@ tr_te['EntryStreetType'] = tr_te['EntryStreetName'].apply(street_type)
 tr_te['ExitStreetType'] = tr_te['ExitStreetName'].apply(street_type)
 
 
+print_step('Hour Bin')
+def hour_bin(hour):
+	if hour in [8, 9, 14, 15, 16, 17, 18]:
+		return 'Rush'
+	if hour in [0, 1, 2, 3, 4, 5, 6]:
+		return 'Early'
+	if hour in [7, 10, 11, 12, 13]:
+		return 'Near rush'
+	if hour in [19, 20, 21, 22, 23]:
+		return 'Late'
+def weekend_hour_bin(hour):
+	if hour in [3, 4, 5, 6, 7, 8]:
+		return 'Early Weekend'
+	if hour in [9, 10]:
+		return 'Weekend Morning'
+	if hour in [11, 12]:
+		return 'Weekend Late Morning'
+	if hour in [13, 14, 15, 16, 17, 18, 19]:
+		return 'Weekend Afternoon'
+	if hour in [20, 21, 22, 23, 0, 1, 2]:
+		return 'Late Weekend'
+tr_te.loc[tr_te['Weekend'] == 0, 'HourBin'] = tr_te['Hour'].apply(hour_bin)
+tr_te.loc[tr_te['Weekend'] == 1, 'HourBin'] = tr_te['Hour'].apply(weekend_hour_bin)
+
+
 print_step('Interactions')
 tr_te['WeekendHour'] = tr_te['Weekend'].astype(str) + '_' + tr_te['Hour'].astype(str)
 tr_te['CityHour'] = tr_te['City'] + '_' + tr_te['Hour'].astype(str)
+tr_te['CityHourBin'] = tr_te['City'] + '_' + tr_te['HourBin'].astype(str)
 tr_te['CityWeekendHour'] = tr_te['City'] + '_' + tr_te['Weekend'].astype(str) + '_' + tr_te['Hour'].astype(str)
 tr_te['sin_Hour'] = np.sin(2 * np.pi * tr_te['Hour'] / 24)
 tr_te['cos_Hour'] = np.cos(2 * np.pi * tr_te['Hour'] / 24)

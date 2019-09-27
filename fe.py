@@ -28,11 +28,19 @@ tr_te['StreetsMatch'] = (tr_te['EntryStreetName'] == tr_te['ExitStreetName']).as
 tr_te['HeadingsMatch'] = (tr_te['EntryHeading'] == tr_te['ExitHeading']).astype(int)
 tr_te['StreetsHeadingsMatch'] = (tr_te['HeadingsMatch'] & tr_te['StreetsMatch']).astype(int)
 
+
 print_step('Cleanup')
+
+print_step('...Path/Intersection')
 # https://www.kaggle.com/c/bigquery-geotab-intersection-congestion/discussion/108770
+tr_te['IntersectionId'] = tr_te['City'] + '_' + tr_te['IntersectionId'].astype(str)
 tr_te['Path'] = tr_te['City'] + '_' + tr_te['Path']
 tr_te['Path'] = tr_te['Path'].apply(lambda s: s.replace(' ', '_'))
 
+print_step('...HourCat')
+tr_te['HourCat'] = tr_te['Hour'].apply(lambda h: 'H{}'.format(h))
+
+print_step('...EntryStreetName')
 tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.translate(str.maketrans('', '', string.punctuation)))
 tr_te['EntryStreetName'] = tr_te['City'] + '_' + tr_te['EntryStreetName']
 tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace(' ', '_'))
@@ -53,6 +61,7 @@ tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('N
 tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('SW', 'Southwest'))
 tr_te['EntryStreetName'] = tr_te['EntryStreetName'].apply(lambda s: s.replace('SE', 'Southeast'))
 
+print_step('...ExitStreetName')
 tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.translate(str.maketrans('', '', string.punctuation)))
 tr_te['ExitStreetName'] = tr_te['City'] + '_' + tr_te['ExitStreetName']
 tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace(' ', '_'))
@@ -73,8 +82,6 @@ tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('NW'
 tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('NE', 'Northeast'))
 tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('SW', 'Southwest'))
 tr_te['ExitStreetName'] = tr_te['ExitStreetName'].apply(lambda s: s.replace('SE', 'Southeast'))
-
-tr_te['IntersectionId'] = tr_te['City'] + '_' + tr_te['IntersectionId'].astype(str)
 
 
 print_step('Street Type')
@@ -131,8 +138,14 @@ print_step('Interactions')
 tr_te['WeekendHour'] = tr_te['Weekend'].astype(str) + '_' + tr_te['Hour'].astype(str)
 tr_te['CityHour'] = tr_te['City'] + '_' + tr_te['Hour'].astype(str)
 tr_te['CityMonth'] = tr_te['City'] + '_' + tr_te['Month'].astype(str)
-tr_te['CityHourBin'] = tr_te['City'] + '_' + tr_te['HourBin'].astype(str)
-tr_te['CityWeekendHour'] = tr_te['City'] + '_' + tr_te['Weekend'].astype(str) + '_' + tr_te['Hour'].astype(str)
+tr_te['HourMonth'] = tr_te['Hour'].astype(str) + '_' + tr_te['Month'].astype(str)
+tr_te['CityHourMonth'] = tr_te['City'] + '_' + tr_te['HourMonth']
+tr_te['CityHourBin'] = tr_te['City'] + '_' + tr_te['HourBin']
+tr_te['MonthHourBin'] = tr_te['Month'].astype(str) + '_' + tr_te['HourBin']
+tr_te['CityMonthHourBin'] = tr_te['City'] + '_' + tr_te['MonthHourBin']
+tr_te['CityWeekendHour'] = tr_te['City'] + '_' + tr_te['WeekendHour']
+tr_te['MonthWeekendHour'] = tr_te['Month'].astype(str) + '_' + tr_te['WeekendHour']
+tr_te['CityMonthWeekendHour'] = tr_te['City'] + '_' + tr_te['MonthWeekendHour']
 tr_te['sin_Hour'] = np.sin(2 * np.pi * tr_te['Hour'] / 24)
 tr_te['cos_Hour'] = np.cos(2 * np.pi * tr_te['Hour'] / 24)
 tr_te['EntryStreetNameHeading'] = tr_te['EntryStreetName'] + '_' + tr_te['EntryHeading']

@@ -253,15 +253,14 @@ targets = ['TotalTimeStopped_p20', 'TotalTimeStopped_p40',
            'DistanceToFirstStop_p60', 'DistanceToFirstStop_p80']
 cat_cols = [c for c in cat_cols.keys() if c not in targets]
 for col in cat_cols:
-    print('...{}'.format(col))
+    print_step('...{}'.format(col))
     tr_te.loc[:, '{}_count'.format(col)] = tr_te.groupby(col)[col].transform('count')
 
 
 print_step('Unique counts')
-counts = {'IntersectionId': ['EntryStreetName', 'ExitStreetName', 'EntryHeading', 'ExitHeading', 'Path', 'WeekendHour', 'TurnType'],
-          'EntryStreetName': ['IntersectionId', 'ExitStreetName', 'EntryHeading', 'ExitHeading', 'Path', 'WeekendHour', 'TurnType'],
-          'ExitStreetName': ['IntersectionId', 'EntryStreetName', 'EntryHeading', 'ExitHeading', 'Path', 'WeekendHour', 'TurnType'],
-          'City': ['IntersectionId', 'EntryStreetName', 'ExitStreetName', 'EntryHeading', 'ExitHeading', 'Path', 'WeekendHour', 'TurnType']}
+counts = {'IntersectionId': ['EntryStreetName', 'ExitStreetName', 'EntryHeading', 'ExitHeading', 'Path', 'WeekendHour', 'Month', 'TurnType'],
+          'EntryStreetName': ['IntersectionId', 'ExitStreetName', 'EntryHeading', 'ExitHeading', 'Path', 'WeekendHour', 'Month', 'TurnType'],
+          'ExitStreetName': ['IntersectionId', 'EntryStreetName', 'EntryHeading', 'ExitHeading', 'Path', 'WeekendHour', 'Month', 'TurnType']}
 for var_a, vars_b in counts.items():
     for var_b in vars_b:
         label = '{}_nunique_{}'.format(var_a, var_b)
@@ -289,3 +288,4 @@ test.to_csv('processed_test.csv', index=False)
 # https://www.kaggle.com/jpmiller/eda-to-break-through-rmse-68
 # https://www.kaggle.com/bgmello/how-one-percentile-affect-the-others
 # https://www.kaggle.com/danofer/baseline-feature-engineering-geotab-69-5-lb
+# https://www.kaggle.com/gaborfodor/from-eda-to-the-top-lb-0-367

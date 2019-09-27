@@ -118,6 +118,7 @@ tr_te.loc[tr_te['Weekend'] == 1, 'HourBin'] = tr_te['Hour'].apply(weekend_hour_b
 print_step('Interactions')
 tr_te['WeekendHour'] = tr_te['Weekend'].astype(str) + '_' + tr_te['Hour'].astype(str)
 tr_te['CityHour'] = tr_te['City'] + '_' + tr_te['Hour'].astype(str)
+tr_te['CityMonth'] = tr_te['City'] + '_' + tr_te['Month'].astype(str)
 tr_te['CityHourBin'] = tr_te['City'] + '_' + tr_te['HourBin'].astype(str)
 tr_te['CityWeekendHour'] = tr_te['City'] + '_' + tr_te['Weekend'].astype(str) + '_' + tr_te['Hour'].astype(str)
 tr_te['sin_Hour'] = np.sin(2 * np.pi * tr_te['Hour'] / 24)
@@ -163,6 +164,21 @@ tr_te['PathNameTurn'] = tr_te['EntryStreetNameTurn'] + '_' +tr_te['ExitStreetNam
 tr_te['EntryStreetTypeTurn'] = tr_te['EntryStreetType'] + '_' + tr_te['TurnType']
 tr_te['ExitStreetTypeTurn'] = tr_te['ExitStreetType'] + '_' + tr_te['TurnType']
 tr_te['PathTypeTurn'] = tr_te['EntryStreetTypeTurn'] + '_' +tr_te['ExitStreetType']
+
+
+print_steps('Rainfall')
+# Adapted from https://www.kaggle.com/dcaichara/feature-engineering-and-lightgbm
+monthly_rainfall = {'Atlanta_1': 5.02, 'Atlanta_5': 3.95, 'Atlanta_6': 3.63, 'Atlanta_7': 5.12,
+                    'Atlanta_8': 3.67, 'Atlanta_9': 4.09, 'Atlanta_10': 3.11, 'Atlanta_11': 4.10,
+				    'Atlanta_12': 3.82, 'Boston_1': 3.92, 'Boston_5': 3.24, 'Boston_6': 3.22,
+                    'Boston_7': 3.06, 'Boston_8': 3.37, 'Boston_9': 3.47, 'Boston_10': 3.79,
+				    'Boston_11': 3.98, 'Boston_12': 3.73, 'Chicago_1': 1.75, 'Chicago_5': 3.38,
+                    'Chicago_6': 3.63, 'Chicago_7': 3.51, 'Chicago_8': 4.62, 'Chicago_9': 3.27,
+                    'Chicago_10': 2.71, 'Chicago_11': 3.01, 'Chicago_12': 2.43,
+                    'Philadelphia_1': 3.52, 'Philadelphia_5': 3.88, 'Philadelphia_6': 3.29,
+                    'Philadelphia_7': 4.39, 'Philadelphia_8': 3.82, 'Philadelphia_9':3.88,
+                    'Philadelphia_10': 2.75, 'Philadelphia_11': 3.16, 'Philadelphia_12': 3.31}
+tr_te['monthly_rainfall'] = tr_te['CityMonth'].map(monthly_rainfall)
 
 
 print_step('City centers')

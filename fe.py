@@ -29,6 +29,7 @@ tr_te['HeadingsMatch'] = (tr_te['EntryHeading'] == tr_te['ExitHeading']).astype(
 tr_te['StreetsHeadingsMatch'] = (tr_te['HeadingsMatch'] & tr_te['StreetsMatch']).astype(int)
 
 print_step('Cleanup')
+# https://www.kaggle.com/c/bigquery-geotab-intersection-congestion/discussion/108770
 tr_te['Path'] = tr_te['City'] + '_' + tr_te['Path']
 tr_te['Path'] = tr_te['Path'].apply(lambda s: s.replace(' ', '_'))
 
@@ -88,6 +89,17 @@ def street_type(street):
 
 tr_te['EntryStreetType'] = tr_te['EntryStreetName'].apply(street_type)
 tr_te['ExitStreetType'] = tr_te['ExitStreetName'].apply(street_type)
+
+def has_cardinal_direction(street):
+    for direction in ['North', 'South', 'West', 'East']:
+        if direction in street:
+            return True
+    return False
+tr_te['EntryStreetHasCardinalDirection'] = tr_te['EntryStreetName'].apply(has_cardinal_direction).astype(int)
+tr_te['ExitStreetHasCardinalDirection'] = tr_te['ExitStreetName'].apply(has_cardinal_direction).astype(int)
+
+tr_te['EntryStreetHasNumber'] = tr_te['EntryStreetName'].apply(lambda s: int(any(c.isdigit() for c in s)))
+tr_te['ExitStreetHasNumber'] = tr_te['ExitStreetName'].apply(lambda s: int(any(c.isdigit() for c in s)))
 
 
 print_step('Hour Bin')
@@ -166,7 +178,7 @@ tr_te['ExitStreetTypeTurn'] = tr_te['ExitStreetType'] + '_' + tr_te['TurnType']
 tr_te['PathTypeTurn'] = tr_te['EntryStreetTypeTurn'] + '_' +tr_te['ExitStreetType']
 
 
-print_steps('Rainfall')
+print_step('Rainfall')
 # Adapted from https://www.kaggle.com/dcaichara/feature-engineering-and-lightgbm
 monthly_rainfall = {'Atlanta_1': 5.02, 'Atlanta_5': 3.95, 'Atlanta_6': 3.63, 'Atlanta_7': 5.12,
                     'Atlanta_8': 3.67, 'Atlanta_9': 4.09, 'Atlanta_10': 3.11, 'Atlanta_11': 4.10,
@@ -255,3 +267,9 @@ train.to_csv('processed_train.csv', index=False)
 
 print_step('Saving test')
 test.to_csv('processed_test.csv', index=False)
+
+
+# Other helpful kernels used
+# https://www.kaggle.com/jpmiller/eda-to-break-through-rmse-68
+# https://www.kaggle.com/bgmello/how-one-percentile-affect-the-others
+# https://www.kaggle.com/danofer/baseline-feature-engineering-geotab-69-5-lb

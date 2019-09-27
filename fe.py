@@ -104,25 +104,25 @@ tr_te['ExitStreetHasNumber'] = tr_te['ExitStreetName'].apply(lambda s: int(any(c
 
 print_step('Hour Bin')
 def hour_bin(hour):
-	if hour in [8, 9, 14, 15, 16, 17, 18]:
-		return 'Rush'
-	if hour in [0, 1, 2, 3, 4, 5, 6]:
-		return 'Early'
-	if hour in [7, 10, 11, 12, 13]:
-		return 'Near rush'
-	if hour in [19, 20, 21, 22, 23]:
-		return 'Late'
+    if hour in [8, 9, 14, 15, 16, 17, 18]:
+        return 'Rush'
+    if hour in [0, 1, 2, 3, 4, 5, 6]:
+        return 'Early'
+    if hour in [7, 10, 11, 12, 13]:
+        return 'Near rush'
+    if hour in [19, 20, 21, 22, 23]:
+        return 'Late'
 def weekend_hour_bin(hour):
-	if hour in [3, 4, 5, 6, 7, 8]:
-		return 'Early Weekend'
-	if hour in [9, 10]:
-		return 'Weekend Morning'
-	if hour in [11, 12]:
-		return 'Weekend Late Morning'
-	if hour in [13, 14, 15, 16, 17, 18, 19]:
-		return 'Weekend Afternoon'
-	if hour in [20, 21, 22, 23, 0, 1, 2]:
-		return 'Late Weekend'
+    if hour in [3, 4, 5, 6, 7, 8]:
+        return 'Early Weekend'
+    if hour in [9, 10]:
+        return 'Weekend Morning'
+    if hour in [11, 12]:
+        return 'Weekend Late Morning'
+    if hour in [13, 14, 15, 16, 17, 18, 19]:
+        return 'Weekend Afternoon'
+    if hour in [20, 21, 22, 23, 0, 1, 2]:
+        return 'Late Weekend'
 tr_te.loc[tr_te['Weekend'] == 0, 'HourBin'] = tr_te['Hour'].apply(hour_bin)
 tr_te.loc[tr_te['Weekend'] == 1, 'HourBin'] = tr_te['Hour'].apply(weekend_hour_bin)
 
@@ -182,9 +182,9 @@ print_step('Rainfall')
 # Adapted from https://www.kaggle.com/dcaichara/feature-engineering-and-lightgbm
 monthly_rainfall = {'Atlanta_1': 5.02, 'Atlanta_5': 3.95, 'Atlanta_6': 3.63, 'Atlanta_7': 5.12,
                     'Atlanta_8': 3.67, 'Atlanta_9': 4.09, 'Atlanta_10': 3.11, 'Atlanta_11': 4.10,
-				    'Atlanta_12': 3.82, 'Boston_1': 3.92, 'Boston_5': 3.24, 'Boston_6': 3.22,
+                    'Atlanta_12': 3.82, 'Boston_1': 3.92, 'Boston_5': 3.24, 'Boston_6': 3.22,
                     'Boston_7': 3.06, 'Boston_8': 3.37, 'Boston_9': 3.47, 'Boston_10': 3.79,
-				    'Boston_11': 3.98, 'Boston_12': 3.73, 'Chicago_1': 1.75, 'Chicago_5': 3.38,
+                    'Boston_11': 3.98, 'Boston_12': 3.73, 'Chicago_1': 1.75, 'Chicago_5': 3.38,
                     'Chicago_6': 3.63, 'Chicago_7': 3.51, 'Chicago_8': 4.62, 'Chicago_9': 3.27,
                     'Chicago_10': 2.71, 'Chicago_11': 3.01, 'Chicago_12': 2.43,
                     'Philadelphia_1': 3.52, 'Philadelphia_5': 3.88, 'Philadelphia_6': 3.29,
@@ -253,7 +253,23 @@ targets = ['TotalTimeStopped_p20', 'TotalTimeStopped_p40',
            'DistanceToFirstStop_p60', 'DistanceToFirstStop_p80']
 cat_cols = [c for c in cat_cols.keys() if c not in targets]
 for col in cat_cols:
+    print('...{}'.format(col))
     tr_te.loc[:, '{}_count'.format(col)] = tr_te.groupby(col)[col].transform('count')
+
+
+print_step('Unique counts')
+counts = {'IntersectionId': ['EntryStreetName', 'ExitStreetName', 'EntryHeading', 'ExitHeading', 'Path', 'WeekendHour', 'TurnType'],
+          'EntryStreetName': ['IntersectionId', 'ExitStreetName', 'EntryHeading', 'ExitHeading', 'Path', 'WeekendHour', 'TurnType'],
+          'ExitStreetName': ['IntersectionId', 'EntryStreetName', 'EntryHeading', 'ExitHeading', 'Path', 'WeekendHour', 'TurnType'],
+          'City': ['IntersectionId', 'EntryStreetName', 'ExitStreetName', 'EntryHeading', 'ExitHeading', 'Path', 'WeekendHour', 'TurnType']}
+for var_a, vars_b in counts.items():
+    for var_b in vars_b:
+        label = '{}_nunique_{}'.format(var_a, var_b)
+        print_step('...{}'.format(label))
+        tr_te[label] = tr_te.groupby(var_a)[var_b].transform('nunique')
+
+
+print_step('Splitting')
 train = tr_te[tr_te['is_train'] == 1]
 test = tr_te[tr_te['is_train'] == 0]
 train = train.drop(['is_train'], axis=1)

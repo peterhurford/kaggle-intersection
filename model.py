@@ -5,7 +5,6 @@ import numpy as np
 
 from utils import print_step, rmse, run_cv_model, runLGB
 
-from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import GroupKFold
 
 
@@ -36,17 +35,6 @@ for target in targets:
     test.drop(target, axis=1, inplace=True)
 
 
-print_step('Label encode')
-cat_cols = train.dtypes[(train.dtypes != np.float) & (train.dtypes != np.int64)]
-cat_cols = list(cat_cols.keys())
-
-for c in cat_cols:
-    le = LabelEncoder()
-    le.fit(pd.concat([train[c], test[c]]))
-    train.loc[:, c] = le.transform(train[c])
-    test.loc[:, c] = le.transform(test[c])
-
-
 train_g = train.copy()
 test_g = test.copy()
 IS_OOFS_MODE = len(sys.argv) == 3 and sys.argv[2] == 'add_oofs'
@@ -70,13 +58,24 @@ if IS_OOFS_MODE:
     label = label + '_w_oofs'
 y = y[1]
 
-split_cols = ['EntryStreetExitStreet', 'Path', 'PathIntersection', 'IntersectionId',
-              'ExitStreetName', 'EntryStreetName', 'EntryStreetNameHeading',
-              'ExitStreetNameHeading', 'Latitude', 'Longitude', 'EntryStreetNameTurn',
-              'ExitStreetNameTurn', 'PathNameTurn', 'PathType', 'PathTypeTurn',
-              'EntryStreetType', 'ExitStreetType', 'EntryStreetTypeExitStreetType',
-              'EntryStreetTypeHeading', 'ExitStreetTypeHeading',
-              'EntryStreetTypeTurn', 'ExitStreetTypeTurn']
+
+cat_cols = [c for c in train.columns if '_NUNIQUE' not in c and '__COUNT' not in c and 'Match' not in c and '_from_' not in c and 'Has' not in c and c not in ['Latitude', 'Longitude', 'Hour', 'sin_Hour', 'cos_Hour', 'Weekend', 'Month', 'sin_Month', 'cos_Month', 'monthly_rainfall']]
+split_cols = ['Path', 'IntersectionId', 'ExitStreetName', 'EntryStreetName',
+              'Latitude', 'Longitude', 'EntryStreetType', 'ExitStreetType']
+def is_ok_col(col):
+    if '__COUNT' in col or '_NUNIQUE' in col:
+        return True
+    for split_col in split_cols:
+        if split_col in col:
+            return False
+    return True
+ok_cols = [c for c in train.columns.values if is_ok_col(c)]
+print('Cat cols: {}'.format(cat_cols))
+print('-')
+print('Groupby Keeps: {}'.format(ok_cols))
+print('-')
+print('Groupby Drops: {}'.format([c for c in train.columns if c not in ok_cols]))
+print('-')
 
 
 print_step('Modeling {}'.format(label))
@@ -86,7 +85,7 @@ lgb_params = {'application': 'poisson',
               'num_leaves': 50,
               'learning_rate': 0.02,
               'bagging_fraction': 0.9,
-              'feature_fraction': 0.3,
+              'feature_fraction': 0.2,
               'verbosity': -1,
               'seed': 1,
               'lambda_l1': 0.1,
@@ -98,7 +97,7 @@ lgb_params = {'application': 'poisson',
               'verbose_eval': 30,
               'num_rounds': 1000,
               'num_threads': 8,
-              'cat_cols': list(set(cat_cols) - set(split_cols))}
+              'cat_cols': list(set(ok_cols) & set(cat_cols))}
 
 if IS_OOFS_MODE:
     lgb_params['lambda_l1'] = 3.0
@@ -107,19 +106,20 @@ if IS_OOFS_MODE:
 
 split = GroupKFold(n_splits=5)
 split = split.split(train_g, y, train_g['IntersectionId'])
-results_g = run_cv_model(train_g.drop(split_cols, axis=1), test_g.drop(split_cols, axis=1), y, runLGB, lgb_params, rmse, label, n_folds=5, fold_splits=split)
+results_g = run_cv_model(train_g[ok_cols], test_g[ok_cols], y, runLGB, lgb_params, rmse, label, n_folds=5, fold_splits=split)
 lgb_params['cat_cols'] = cat_cols
 results = run_cv_model(train, test, y, runLGB, lgb_params, rmse, label, n_folds=5)
-import pdb
-pdb.set_trace()
 
-imports = results_g['importance'].groupby('feature')['feature', 'importance'].mean().reset_index()
+imports_g = results_g['importance'].groupby('feature')['feature', 'importance'].mean().reset_index()
 with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-    print(imports.sort_values('importance', ascending=False))
+    print(imports_g.sort_values('importance', ascending=False))
 
 imports = results['importance'].groupby('feature')['feature', 'importance'].mean().reset_index()
 with pd.option_context('display.max_rows', None, 'display.max_columns', None):
     print(imports.sort_values('importance', ascending=False))
+
+import pdb
+pdb.set_trace()
 
 print_step('Saving OOFs 1/2')
 pd.DataFrame({label: results['train']}).to_csv('{}_oof.csv'.format(label), index=False)

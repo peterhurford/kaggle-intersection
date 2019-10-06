@@ -45,7 +45,6 @@ def feature_engineer(df):
     df['HourCat'] = df['Hour'].apply(lambda h: 'H{}'.format(h))
     print_step('...Month')
     df['MonthCat'] = df['Month'].apply(lambda h: 'M{}'.format(h))
-
     find_replaces = [[' ', '_'], ['_St', '_Street'], ['_Ave', '_Avenue'], ['_Bld', '_Boulevard'],
                      ['_Pkway', '_Parkway'], ['S_', 'South_'], ['_S\b', '_South'], ['N_', 'North'],
                      ['_N\b', '_North'], ['_N\b', '_North'], ['E_', 'East'], ['_E\b', '_East'],
@@ -124,7 +123,7 @@ def feature_engineer(df):
                     'ExitHeading': ['HourCat', 'MonthCat', 'HourBin', 'Weekend'],
                     'HourCat': ['MonthCat', 'Weekend'],
                     'MonthCat': ['HourBin'],
-                    'City': ['MonthCat', 'HourCat', 'HourBin', 'Weekend', 'EntryHeading', 'ExitHeading', 'EntryStreetType', 'ExitStreetType']}
+                    'City': ['HourCat', 'HourBin', 'Weekend', 'EntryHeading', 'ExitHeading', 'EntryStreetType', 'ExitStreetType']}
     def interact(df, interactions):
         i = 1
         total = sum([len(list(set(v))) for k, v in interactions.items()])
@@ -136,15 +135,14 @@ def feature_engineer(df):
                 i += 1
         return df
     df = interact(df, interactions)
-    interactions = {'City': ['HourCat_X_MonthCat', 'MonthCat_X_HourBin', 'HourCat_X_Weekend', 'EntryStreetType_X_ExitStreetType', 'EntryHeading_X_ExitHeading',
+    interactions = {'City': ['HourCat_X_Weekend', 'EntryStreetType_X_ExitStreetType', 'EntryHeading_X_ExitHeading',
                              'ExitStreetType_X_ExitHeading', 'EntryStreetType_X_EntryHeading'],
                     'IntersectionId': ['EntryStreetName_X_ExitStreetName', 'EntryHeading_X_ExitHeading', 'HourCat_X_Weekend'],
                     'HourBin': ['EntryStreetType_X_ExitStreetType', 'EntryHeading_X_ExitHeading', 'EntryStreetType_X_EntryHeading', 'ExitStreetType_X_ExitHeading'],
                     'HourCat': ['EntryStreetType_X_ExitStreetType', 'EntryHeading_X_ExitHeading', 'EntryStreetType_X_EntryHeading', 'ExitStreetType_X_ExitHeading'],
                     'MonthCat': ['HourCat_X_Weekend']}
     df = interact(df, interactions)
-    interactions = {'City': ['MonthCat_X_HourCat_X_Weekend', 'HourBin_X_EntryStreetType_X_ExitStreetType', 'HourBin_X_EntryHeading_X_ExitHeading',
-                             'HourBin_X_EntryStreetType_X_EntryHeading', 'HourBin_X_ExitStreetType_X_ExitHeading'],
+    interactions = {'City': ['HourBin_X_EntryStreetType_X_ExitStreetType', 'HourBin_X_EntryStreetType_X_EntryHeading', 'HourBin_X_ExitStreetType_X_ExitHeading'],
                    'MonthCat': ['HourBin_X_EntryStreetType_X_ExitStreetType', 'HourBin_X_EntryHeading_X_ExitHeading',
                                 'HourBin_X_EntryStreetType_X_EntryHeading', 'HourBin_X_ExitStreetType_X_ExitHeading',
                                 'HourCat_X_EntryStreetType_X_ExitStreetType', 'HourCat_X_EntryHeading_X_ExitHeading',
@@ -253,10 +251,10 @@ def feature_engineer(df):
                     'NorthSouth_X_EastWest': ['EntryStreetName', 'ExitStreetName', 'EntryStreetType', 'ExitStreetType', 'EntryHeading', 'ExitHeading', 'HourCat', 'MonthCat', 'HourBin', 'Weekend',
                                               'TurnType_X_HourCat', 'TurnType_X_HourBin', 'TurnSharpness_X_HourCat', 'TurnSharpness_X_HourBin', 'TurnDirection_X_HourCat', 'TurnDirection_X_HourBin']}
     df = interact(df, interactions)
-    interactions = {'City_X_NorthSouth_X_EastWest': ['EntryStreetName', 'ExitStreetName', 'EntryStreetType', 'ExitStreetType', 'EntryHeading', 'ExitHeading', 'HourCat', 'MonthCat', 'HourBin', 'Weekend',
+    interactions = {'City_X_NorthSouth_X_EastWest': ['EntryStreetName', 'ExitStreetName', 'EntryStreetType', 'ExitStreetType', 'EntryHeading', 'ExitHeading', 'HourBin', 'Weekend',
                                                      'TurnType', 'TurnSharpness', 'TurnDirection', 'TurnType_X_HourCat', 'TurnType_X_HourBin', 'TurnSharpness_X_HourCat', 'TurnSharpness_X_HourBin',
-                                                     'TurnDirection_X_HourCat', 'TurnDirection_X_HourBin', 'MonthCat_X_HourCat_X_Weekend', 'HourBin_X_EntryStreetType_X_ExitStreetType',
-                                                     'HourBin_X_EntryHeading_X_ExitHeading', 'HourBin_X_EntryStreetType_X_EntryHeading', 'HourBin_X_ExitStreetType_X_ExitHeading'],
+                                                     'TurnDirection_X_HourCat', 'TurnDirection_X_HourBin', 'HourBin_X_EntryStreetType_X_ExitStreetType',
+                                                     'HourBin_X_EntryStreetType_X_EntryHeading', 'HourBin_X_ExitStreetType_X_ExitHeading'],
                     'EastWest_X_City': ['EntryStreetName', 'ExitStreetName', 'EntryStreetType', 'ExitStreetType', 'EntryHeading', 'ExitHeading', 'HourCat', 'MonthCat', 'HourBin', 'Weekend'
                                         'TurnType', 'TurnSharpness', 'TurnDirection', 'TurnType_X_HourCat', 'TurnType_X_HourBin', 'TurnSharpness_X_HourCat', 'TurnSharpness_X_HourBin',
                                         'TurnDirection_X_HourCat', 'TurnDirection_X_HourBin'],
@@ -272,22 +270,6 @@ def feature_engineer(df):
                     'NorthSouth_X_City': ['MonthCat_X_HourCat_X_Weekend', 'HourBin_X_EntryStreetType_X_ExitStreetType', 'HourBin_X_EntryHeading_X_ExitHeading',
                                           'HourBin_X_EntryStreetType_X_EntryHeading', 'HourBin_X_ExitStreetType_X_ExitHeading']}
     df = interact(df, interactions)
-
-
-    print_step('Rainfall')
-# Adapted from https://www.kaggle.com/dcaichara/feature-engineering-and-lightgbm
-    monthly_rainfall = {'Atlanta_M1': 5.02, 'Atlanta_M5': 3.95, 'Atlanta_M6': 3.63, 'Atlanta_M7': 5.12,
-                        'Atlanta_M8': 3.67, 'Atlanta_M9': 4.09, 'Atlanta_M10': 3.11, 'Atlanta_M11': 4.10,
-                        'Atlanta_M12': 3.82, 'Boston_M1': 3.92, 'Boston_M5': 3.24, 'Boston_M6': 3.22,
-                        'Boston_M7': 3.06, 'Boston_M8': 3.37, 'Boston_M9': 3.47, 'Boston_M10': 3.79,
-                        'Boston_M11': 3.98, 'Boston_M12': 3.73, 'Chicago_M1': 1.75, 'Chicago_M5': 3.38,
-                        'Chicago_M6': 3.63, 'Chicago_M7': 3.51, 'Chicago_M8': 4.62, 'Chicago_M9': 3.27,
-                        'Chicago_M10': 2.71, 'Chicago_M11': 3.01, 'Chicago_M12': 2.43,
-                        'Philadelphia_M1': 3.52, 'Philadelphia_M5': 3.88, 'Philadelphia_M6': 3.29,
-                        'Philadelphia_M7': 4.39, 'Philadelphia_M8': 3.82, 'Philadelphia_M9':3.88,
-                        'Philadelphia_M10': 2.75, 'Philadelphia_M11': 3.16, 'Philadelphia_M12': 3.31}
-    df['monthly_rainfall'] = df['City_X_MonthCat'].map(monthly_rainfall)
-
     return df
 
 

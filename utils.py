@@ -53,7 +53,7 @@ def run_cv_model(train, test, target, model_fn, params={}, eval_fn=None, label='
     if train_on_full:
         print_step('## Training on full ##')
         params2 = params.copy()
-        _, pred_full_test, _ = model_fn(train, target, None, None, test, params2)
+        _, pred_full_test, importances = model_fn(train, target, None, None, test, params2)
     else:
         pred_full_test = pred_full_test / n_folds
 
@@ -67,6 +67,16 @@ def run_cv_model(train, test, target, model_fn, params={}, eval_fn=None, label='
                'cv': cv_scores,
                'importance': feature_importance_df}
     return results
+
+
+def get_feature_importances(train, target, model_fn, params={}, label='model'):
+    print_step('{}: Running LGB...'.format(label))
+    params2 = params.copy()
+    _, _, importances = model_fn(train, target, None, None, None, params2)
+    fold_importance_df = pd.DataFrame()
+    fold_importance_df['feature'] = train.columns.values
+    fold_importance_df['importance'] = importances
+    return fold_importance_df
 
 
 def runLGB(train_X, train_y, test_X=None, test_y=None, test_X2=None, params={}):

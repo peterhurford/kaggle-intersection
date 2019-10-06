@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 import numpy as np
 
-from utils import print_step, rmse, run_cv_model, runLGB
+from utils import print_step, rmse, get_feature_importances, runLGB
 
 from sklearn.model_selection import GroupKFold
 
@@ -69,14 +69,14 @@ if IS_OOFS_MODE:
 
 
 model_id = sys.argv[1]
-y = list(target_data.items())[int(model_id)]
-label = y[0]
+target = list(target_data.items())[int(model_id)]
+label = target[0]
 if IS_OOFS_MODE:
     label = label + '_w_oofs'
-y = y[1]
+target = target[1]
 
 
-cat_cols = [c for c in train.columns if '_NUNIQUE' not in c and '__COUNT' not in c and 'Match' not in c and '_from_' not in c and 'Has' not in c and c not in ['Latitude', 'Longitude', 'Hour', 'sin_Hour', 'cos_Hour', 'Weekend', 'Month']]
+cat_cols = [c for c in train.columns if '_NUNIQUE' not in c and '__COUNT' not in c and 'Match' not in c and '_from_' not in c and 'Has' not in c and c not in ['Latitude', 'Longitude', 'Hour', 'sin_Hour', 'cos_Hour', 'Weekend', 'Month', 'sin_Month', 'cos_Month', 'monthly_rainfall']]
 split_cols = ['Path', 'IntersectionId', 'ExitStreetName', 'EntryStreetName',
               'Latitude', 'Longitude', 'EntryStreetType', 'ExitStreetType']
 def is_ok_col(col):
@@ -86,18 +86,7 @@ def is_ok_col(col):
         if split_col in col:
             return False
     return True
-ok_cols = [c for c in train_g.columns.values if is_ok_col(c)]
-print('-')
-print('Cat cols: {}'.format(cat_cols))
-print('-')
-print('Groupby Keeps: {}'.format(ok_cols))
-print('-')
-print('Groupby Drops: {}'.format([c for c in train_g.columns if c not in ok_cols]))
-print('-')
-print(train_g[ok_cols].shape)
-print(test_g[ok_cols].shape)
-print('-')
-
+ok_cols = [c for c in train.columns.values if is_ok_col(c)]
 
 print_step('Modeling {}'.format(label))
 lgb_params = {'application': 'poisson',
@@ -114,9 +103,8 @@ lgb_params = {'application': 'poisson',
               'max_delta_step': 0.7,
               'min_child_samples': 10,
               'min_child_weight': 5,
-              'early_stop': 60,
               'verbose_eval': 30,
-              'num_rounds': 1000,
+              'num_rounds': 400,
               'num_threads': 8,
               'cat_cols': list(set(ok_cols) & set(cat_cols))}
 
@@ -125,28 +113,47 @@ if IS_OOFS_MODE:
     lgb_params['lambda_l2'] = 3.0
 
 
-split = GroupKFold(n_splits=5)
-split = split.split(train_g, y, train_g['IntersectionId'])
-results_g = run_cv_model(train_g[ok_cols], test_g[ok_cols], y, runLGB, lgb_params, rmse, label, n_folds=5, fold_splits=split)
-lgb_params['cat_cols'] = cat_cols
-results = run_cv_model(train, test, y, runLGB, lgb_params, rmse, label, n_folds=5)
+baseline = get_feature_importances(train_g[ok_cols], target, runLGB, lgb_params, label + '_g_baseline')
+dfs = {}
+for run in range(20):
+    print_step('Null importances run {}'.format(run))
+    target_ = target.copy().sample(frac=1.0)
+    df = get_feature_importances(train_g[ok_cols], target_, runLGB, lgb_params, label + '_g_run_{}'.format(run))
+    dfs[run] = df
 
-imports_g = results_g['importance'].groupby('feature')['feature', 'importance'].mean().reset_index()
-with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-    print(imports_g.sort_values('importance', ascending=False))
+dfs = pd.concat(dfs.values())
 
-imports = results['importance'].groupby('feature')['feature', 'importance'].mean().reset_index()
-with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-    print(imports.sort_values('importance', ascending=False))
+feature_scores = []
+for _f in dfs['feature'].unique():
+    f_null_imps_gain = dfs.loc[dfs['feature'] == _f, 'importance'].values
+    f_act_imps_gain = baseline.loc[baseline['feature'] == _f, 'importance'].mean()
+    score = np.log(1e-10 + f_act_imps_gain / (1 + np.percentile(f_null_imps_gain, 75)))
+    feature_scores.append((_f, score))
 
+scores_df_g = pd.DataFrame(feature_scores, columns=['feature', 'score'])
+
+scores_df_g.sort_values('score').to_csv(label + '_g_feature_importance.csv', index=False)
+
+
+baseline = get_feature_importances(train, target, runLGB, lgb_params, label + '_baseline')
+dfs = {}
+for run in range(20):
+    print_step('Null importances run {}'.format(run))
+    target_ = target.copy().sample(frac=1.0)
+    df = get_feature_importances(train, target_, runLGB, lgb_params, label + '_run_{}'.format(run))
+    dfs[run] = df
+
+dfs = pd.concat(dfs.values())
+
+feature_scores = []
+for _f in dfs['feature'].unique():
+    f_null_imps_gain = dfs.loc[dfs['feature'] == _f, 'importance'].values
+    f_act_imps_gain = baseline.loc[baseline['feature'] == _f, 'importance'].mean()
+    score = np.log(1e-10 + f_act_imps_gain / (1 + np.percentile(f_null_imps_gain, 75)))
+    feature_scores.append((_f, score))
+
+scores_df = pd.DataFrame(feature_scores, columns=['feature', 'score'])
+
+scores_df.sort_values('score').to_csv(label + '_feature_importance.csv', index=False)
 import pdb
 pdb.set_trace()
-
-print_step('Saving OOFs 1/2')
-pd.DataFrame({label: results['train']}).to_csv('{}_oof.csv'.format(label), index=False)
-print_step('Saving OOFs 2/2')
-pd.DataFrame({label: results_g['train']}).to_csv('{}_g_oof.csv'.format(label), index=False)
-print_step('Saving preds 1/2')
-pd.DataFrame({label: results['test']}).to_csv('{}_submit.csv'.format(label), index=False)
-print_step('Saving preds 2/2')
-pd.DataFrame({label: results_g['test']}).to_csv('{}_g_submit.csv'.format(label), index=False)

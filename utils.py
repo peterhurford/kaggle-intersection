@@ -36,7 +36,8 @@ def run_cv_model(train, test, target, model_fn, params={}, eval_fn=None, label='
         dev_y, val_y = target[dev_index], target[val_index]
         params2 = params.copy()
         pred_val_y, pred_test_y, importances = model_fn(dev_X, dev_y, val_X, val_y, test, params2)
-        pred_full_test = pred_full_test + pred_test_y
+        if test is not None:
+            pred_full_test = pred_full_test + pred_test_y
         pred_train[val_index] = pred_val_y
         if eval_fn is not None:
             cv_score = eval_fn(val_y, pred_val_y)
@@ -54,18 +55,22 @@ def run_cv_model(train, test, target, model_fn, params={}, eval_fn=None, label='
         print_step('## Training on full ##')
         params2 = params.copy()
         _, pred_full_test, importances = model_fn(train, target, None, None, test, params2)
-    else:
+    elif test is not None:
         pred_full_test = pred_full_test / n_folds
+    final_cv = eval_fn(target, pred_train)
 
     print('{} cv scores : {}'.format(label, cv_scores))
     print('{} cv mean score : {}'.format(label, np.mean(cv_scores)))
-    print('{} cv total score : {}'.format(label, eval_fn(target, pred_train)))
+    print('{} cv total score : {}'.format(label, final_cv))
     print('{} cv std score : {}'.format(label, np.std(cv_scores)))
 
     results = {'label': label,
-               'train': pred_train, 'test': pred_full_test,
+               'train': pred_train,
                'cv': cv_scores,
+               'final_cv': final_cv,
                'importance': feature_importance_df}
+    if test is not None:
+        results['test'] = pred_full_test
     return results
 
 
@@ -117,8 +122,8 @@ def runLGB(train_X, train_y, test_X=None, test_y=None, test_X2=None, params={}):
             print_step('Predict 1/2')
             pred_test_y = model.predict(test_X, num_iteration=model.best_iteration)
             preds_test_y += [pred_test_y]
-        print_step('Predict 2/2')
         if test_X2 is not None:
+            print_step('Predict 2/2')
             pred_test_y2 = model.predict(test_X2, num_iteration=model.best_iteration)
             preds_test_y2 += [pred_test_y2]
 
